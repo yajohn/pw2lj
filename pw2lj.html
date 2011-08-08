@@ -1,0 +1,303 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<meta content="text/html; charset=UTF-8" http-equiv="content-type"><title>LicasaWeb 2 LiveJournal</title>
+
+<meta content="yaJohn" name="author">
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="jquery.cookie.js"></script>
+<link rel="stylesheet" href="picasaweb2livejournal.css" type="text/css">
+
+</head>
+<body>
+
+<!-- options -->
+<table _style="width: 100%;" border="0" cellpadding="2" cellspacing="2">
+  <tbody>
+	<tr>
+		<td style="text-align: right;">User</td>
+		<td><input size="20" name="UserID" id="UserID" class="Cookie" value="">  &nbsp; 
+			<img id="RunButton" src="img/reload.png"/> &nbsp; <span id="Author"></span></td>
+	</tr>
+    <tr>
+      <td style="text-align: right;">Preview size</td>
+      <td style="text-align: left;">
+      <select class="Options Cookie" size="1" id="PreviewSize">
+      <option>128x96</option>
+      <option>400x300</option>
+      <option selected="selected">800x600</option>
+      <option>1024x768</option>
+      <option value="">Full size</option>
+      </select>
+      </td>
+    </tr>
+    <tr>
+      <td style="text-align: right;">Show title</td>
+      <td style="text-align: left;"><input class="Options Cookie" checked="checked" id="ShowTitle" type="checkbox"></td>
+    </tr>
+    <tr>
+      <td style="text-align: right;">Link of</td>
+      <td style="text-align: left;">
+      <select class="Options Cookie" size="1" id="LinkOf">
+      <option selected="selected" value="full">Full image</option>
+      <option value="picasa">Picasaweb</option>
+      <option  value="no">-</option>
+      </select>
+      </td>
+    </tr>
+    <tr>
+      <td style="text-align: right;">Align</td>
+      <td style="text-align: left;">
+      <select class="Options Cookie" size="1" id="Align">
+	  <option selected="selected" value="">-</option>
+      <option value="left">Left</option>
+      <option value="center">Center</option>
+      <option value="right">Right</option>
+      </select>
+      </td>
+    </tr>	
+    <tr>
+      <td style="text-align: right;">View</td>
+      <td style="text-align: left;"><a href="#"><img id="ShowHtmlCode" src="img/html.png" border="0"/></a> &nbsp; <a href="#"><img id="ShowPreview" src="img/preview.png" border="0"/></a></td>
+    </tr>	
+	<!--
+    <tr>
+      <td style="text-align: right;"></td>
+      <td style="text-align: left;"></td>
+    </tr>
+	-->
+  </tbody>
+</table>
+
+<!--h1>PicasaWeb 2 LiveJournal</h1-->
+<!--
+User:&nbsp;<input size="20" name="UserID" id="UserID" value="yaJohn777"> 
+<img id="RunButton" src="run.gif"/>
+<br/>
+-->
+<hr/>
+	  
+	  
+<table border="0" cellpadding="3" cellspacing="3">
+    <tr>
+      <td style="vertical-align: top;">
+		Albums:
+		<ol id="Albums"></ol>
+	  </td>
+      <td style="vertical-align: top;" width="100%">
+		<a name="preview"/>
+		<span id="Preview"></span>
+		<textarea wrap="off" cols="80" rows="20" name="html_code" id="HtmlCode">
+			&lt;!-- Created by PicasWeb2LiveJournal --&gt;
+		</textarea>
+	  </td>
+    </tr>
+  </tbody>
+</table>
+
+
+
+<script type="text/javascript">
+
+var galery;
+
+function log(s) {
+	if(window.console)
+		console.log(s);
+	return s;
+}
+
+function html(text) {
+	return text;
+}
+
+function link(text, url) {
+	if (url != null) 
+		if (link != "")
+			return "<a href=\"" + url + "\" target=\"_blank\">" + html(text) + "</a>";
+	return html(text);
+}
+
+function align(text, _align) {
+	if (_align != null) 
+		if (_align != "")
+			return "<div style=\"text-align: " + _align + ";\">" + text + "</div>";
+	return text;
+}
+
+function image(img) {
+	var x = img.width;
+	var y = img.height;
+	var size = $("#PreviewSize").val().split("x", 2);
+	log("img");
+	log(size);
+	var s = "";
+	if (size.length == 2) { //-- resize
+		if ((x > y) != (size[0] > size[1])) {
+			var tmp = size[0];
+			size[0] = size[1];
+			size[1] = tmp;
+		}
+		var kx = size[0] / x;
+		var ky = size[1] / y;
+		var k = kx < ky ? kx : ky;
+		s = " width=\"" + Math.round(x*k) + "\" height=\"" + Math.round(y*k) + "\" ";
+	}
+	log("s: " + s);
+	return log("<img src=\"" + img.src + '"' + s + "\" alt=\"" + img.title + "\" " + s + ' border="0" />');
+}
+
+//-- Functons
+function rebuildGalery() {
+	log(galery);
+	log($("#PreviewSize"));
+	if (galery.images == null)
+		return;
+	var res = "";
+	for(var i in galery.images) {
+		//var url = 
+		var img = galery.images[i];
+		var s = image(galery.images[i]);
+		s = link(s, img.url);
+		if ($("#ShowTitle")[0].checked) {
+			s += "<br/>\r\n" + img.title;
+			if (img.summary != "")
+				s += "<br/>" + img.summary;
+		}
+		s = align(s, $("#Align")[0].value); 
+		res += s + "<br/>\r\n";
+		
+	}
+	res += link("&copy; " + galery.userName, galery.userURL);
+	$("#Preview").text("");
+	$("#Preview").append(res);
+	$("#HtmlCode").text(res);
+	
+	saveToCookie();
+}
+
+
+function onSelectAlbum(event){
+	log(event);
+	galery.albumID = event.currentTarget.attributes.getNamedItem('albumID').value;
+	log(galery);
+	var url="https://picasaweb.google.com/data/feed/api/user/" + galery.userID + 
+		"/albumid/" + galery.albumID + "?access=public&alt=json&callback=?";
+	log(url);
+	$.getJSON(url, function(data){
+		log(data);
+		galery.title = data.feed.title.$t;
+		galery.subtitle = data.feed.subtitle.$t;
+		galery.images = new Array();
+		for(var i in data.feed.entry) {
+			var img = new Object();
+			img.src = data.feed.entry[i].content.src;
+			img.height = data.feed.entry[i].gphoto$height.$t;
+			img.width = data.feed.entry[i].gphoto$width.$t;
+			img.title = data.feed.entry[i].title.$t;
+			img.summary = data.feed.entry[i].summary.$t;
+			img.url = img.src;
+			for (var l in data.feed.entry[i].link)
+				if (data.feed.entry[i].link[l] == "alternate")
+					img.link = data.feed.entry[i].link[l].href;
+			galery.images[galery.images.length] = img;	
+		}
+		rebuildGalery();
+	});
+}
+function setShowMode(mode) {
+	log(mode);
+	$("#Preview").hide();
+	$("#HtmlCode").hide();
+	if (mode == "html")
+		$("#HtmlCode").show();
+	if (mode == "preview")
+		$("#Preview").show();		
+}
+
+function getAlbums(userID) {
+	log("Get albums: " + userID);
+	$('.Options').attr('disabled', 'disabled');
+	$("#Preview").text("");
+	$("#HtmlCode").text("");
+	galery = new Object();
+	galery.userID = userID;
+	$("#Author").text(userID);
+	$("#Albums").text("");
+	$("#HtmlCode").text("<!-- no data -->");
+	var url = "https://picasaweb.google.com/data/feed/api/user/" + userID + "?callback=?&alt=json";
+	log(url);
+	var cnt = 0;	
+	$.getJSON(url, function(data){
+		log(data);
+		if(data.feed.author.length > 0) {//ToDo: all authors
+			galery.userName = data.feed.author[0].name.$t;
+			galery.userURL = data.feed.author[0].uri.$t;
+		} else
+			galery.userName = "";
+		$("#Author").text(galery.userName);
+		var cnt = 0;
+		for(var i in data.feed.entry) {
+			cnt++;
+			$("#Albums").append(
+				'<li class="album" albumID="' + data.feed.entry[i].gphoto$id.$t + '" userID="' + userID + '">' + 
+				'<a id="AlbumItem" href="#preview">' +
+				data.feed.entry[i].title.$t + 
+				'</a></li>');				
+		}
+		log(cnt);
+		if (cnt)
+			$('.Options').removeAttr('disabled');
+			
+		$(".album").click(onSelectAlbum);
+		});
+		
+		$("#ShowHtmlCode").click(function() {
+			setShowMode("html");
+		});		
+		$("#ShowPreview").click(function() {
+			setShowMode("preview");
+		});				
+		$(".Options").change(function(sender) {
+			//log(sender.currentTarget.value);
+			rebuildGalery();
+		});	
+		saveToCookie()
+}
+
+function loadFromCookie() {
+	$(".Cookie").each(function() {
+		if($.cookie(this.id))
+			$(this).val(log($.cookie(this.id)));
+	});
+}
+
+function saveToCookie() {
+	log("saveToCookie");
+	$(".Cookie").each(function() {
+		if($(this).val())
+			$.cookie(this.id, $(this).val(), { expires: 100});
+	});
+	
+}
+
+//-- init
+jQuery(document).ready(function(){    
+
+	$("#RunButton").click(function() {
+		getAlbums($("#UserID").val());
+	});
+	
+	$('.Options').attr('disabled', 'disabled');
+	setShowMode("html");
+	loadFromCookie();
+	if($("#UserID").val())
+		getAlbums($("#UserID").val());
+
+
+//$("<div><p>бабах!</p></div>").appendTo("#body");
+});
+
+
+</script>
+
+</body></html>
